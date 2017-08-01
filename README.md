@@ -29,4 +29,4 @@ To deploy the template and test the demo code:
 
 7. Once the Stack is ready, go to "Outputs", copy the "DemoScript" URL and open it in your web browser
 
-8. Test your database response times with and without caching !!
+8. Test your queries directly from your database and with cache to compare response times!
