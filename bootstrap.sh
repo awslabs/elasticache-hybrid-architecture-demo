@@ -34,8 +34,7 @@ chkconfig httpd on
 
 
 # setup demo page
-wget https://s3.amazonaws.com/agleon-scripts/elasticache/elasticache-hybrid-architecture-demo.zip
-unzip elasticache-hybrid-architecture-demo.zip
+git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
 cd elasticache-hybrid-architecture-demo
 sed -e "s/{ELASTICACHE_ENDPOINT}/${elasticache_endpoint}/g" \
     -e "s/{ELASTICACHE_PORT}/${elasticache_port}/g" \

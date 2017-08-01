@@ -124,10 +124,6 @@ Parameters:
     KeyName:
         Type: AWS::EC2::KeyPair::KeyName
         Description: "KeyName used to decrypt Windows password"
-    WebBootstrapScriptUrl:
-        Type: String
-        Default: https://s3.amazonaws.com/agleon-scripts/elasticache/bootstrap.sh
-        Description: "Script to install Apache, PHP, Redis and dependencies in the Amazon EC2 instance"
 
 Mappings:
     RegionMap:
@@ -268,8 +264,9 @@ Resources:
             UserData:
                 Fn::Base64: !Sub  |
                     #!/bin/sh
-                    yum -y install wget
-                    wget ${WebBootstrapScriptUrl}
+                    yum -y install git
+                    git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
+                    cd elasticache-hybrid-architecture-demo
                     sh ./bootstrap.sh ${CacheCluster.RedisEndpoint.Address} ${CacheCluster.RedisEndpoint.Port} ${DatabaseAddress} ${DatabaseUsername} ${DatabaseName}
 
     # Amazon ElastiCache
