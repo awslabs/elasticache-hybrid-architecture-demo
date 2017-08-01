@@ -10,7 +10,7 @@ To deploy the template and test the demo code:
 2. Go to AWS Cloudformation's console and click on "Create Stack"
 3. Choose "Specify an Amazon S3 template URL" with the next URL and click Next
 
-   ** https://github.com/awslabs/elasticache-hybrid-architecture-demo/cloudformation-template.yaml **
+   **https://github.com/awslabs/elasticache-hybrid-architecture-demo/cloudformation-template.yaml**
 
 4. Give a name to your Stack like "ElastiCacheDemo", fill the Parameters and click Next, the most important parameters are:
 
