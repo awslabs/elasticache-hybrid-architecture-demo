@@ -125,5 +125,5 @@ if ($cache_result !== false) {
     $redis->set($query_key, $value);
 
     $db->close();
-    jsonResponse('Loading data directly from database', 'warning', $query_result, 'database');
+    jsonResponse('Results directly from database', 'success', $query_result, 'database');
 }

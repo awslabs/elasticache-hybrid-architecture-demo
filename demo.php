@@ -109,10 +109,12 @@ $messages = null;
 				<label class="control-label col-sm-2">Instance Address:</label>
 				<div class="col-sm-6"><label class="control-label"><?php echo $instance_ip; ?></label><br /> <span class="text-danger">Allow access in your database's firewall to this address</span></div>
 			</div>
+<!-- Uncomment to add support for external Redis server
 			<div class="form-group">
 				<label class="control-label col-sm-2">Amazon ElastiCache:</label>
 				<div class="col-sm-6"><label class="control-label">{{ redisEndpoint }}:{{ redisPort }}</label></div>
 			</div>
+-->
 			<div class="form-group">
 				<label for="mysqlEndpoint" class="control-label col-sm-2">MySQL address:</label>
 				<div class="col-sm-6"><input class="form-control" type="text" id="mysqlEndpoint" ng-model="mysqlEndpoint" placeholder="Database address (hostname or IP)"><span id="mysqlPort" ng-model="mysqlPort"></div>
