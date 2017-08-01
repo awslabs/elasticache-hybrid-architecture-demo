@@ -14,12 +14,14 @@ To deploy the template and test the demo code:
 
 4. Give a name to your Stack like "ElastiCacheDemo", fill the Parameters and click Next, the most important parameters are:
 
-   ** DatabaseServer ** It is your database address, IP or hostname
-   ** DatabaseName ** Name of your database or schema
-   ** DatabaseUsername ** Your database's username
-   ** KeyName ** Your key pair to SSH access the instance
-   ** Vpc ** VPC where your Amazon EC2 instance will be deployed
-   ** Subnet ** Subnet where your Amazon EC2 instance will be deployed
+   | Parameter        | Description                                           |
+   | ---------------- | ----------------------------------------------------- |
+   | DatabaseServer   | It is your database address, IP or hostname           |
+   | DatabaseName     | Name of your database or schema                       |
+   | DatabaseUsername | Your database's username                              |
+   | KeyName          | Your key pair to SSH access the instance              |
+   | Vpc              | VPC where your Amazon EC2 instance will be deployed   |
+   | Subnet           | Subnet where your Amazon EC2 instance will be deployed|
 
 5. Select the Tags to include in your Stack and click Next
 
