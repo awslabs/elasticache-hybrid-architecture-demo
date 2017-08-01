@@ -4,15 +4,16 @@ Demo code to deploy and test Amazon ElastiCache in hybrid architectures with dat
 
 ## Launch of AWS CloudFormation template
 
-To deploy the template and test the demo code:
+To deploy and test the template:
 
-1. Log into AWS Console
-2. Go to AWS Cloudformation's console and click on "Create Stack"
-3. Choose "Specify an Amazon S3 template URL" with the next URL and click Next
+1. Download the template by cloning the repo:
 
-   **https://raw.githubusercontent.com/awslabs/elasticache-hybrid-architecture-demo/master/cloudformation-template.yaml**
+   **git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo**
 
-4. Give a name to your Stack like "ElastiCacheDemo", fill the Parameters and click Next, the most important parameters are:
+2. Log into AWS Console
+3. Go to AWS Cloudformation's console and click on "Create Stack"
+4. Select "Upload a template to Amazon S3" and choose the file "cloudformation-template.yaml", click Next
+5. Give a name to your Stack like "ElastiCacheDemo", fill the Parameters and click Next, the most important parameters are:
 
    | Parameter        | Description                                           |
    | ---------------- | ----------------------------------------------------- |
@@ -23,10 +24,10 @@ To deploy the template and test the demo code:
    | Vpc              | VPC where your Amazon EC2 instance will be deployed   |
    | Subnet           | Subnet where your Amazon EC2 instance will be deployed|
 
-5. Select the Tags to include in your Stack and click Next
+6. Select the Tags to include in your Stack and click Next
 
-6. Review your options, select the "I acknowledge that AWS CloudFormation might create IAM resources." and click on "Create"
+7. Review your options, select the "I acknowledge that AWS CloudFormation might create IAM resources." and click on "Create"
 
-7. Once the Stack is ready, go to "Outputs", copy the "DemoScript" URL and open it in your web browser
+8. Once the Stack is ready, go to "Outputs", copy the "DemoScript" URL and open it in your web browser
 
 **Test your queries directly from your database as well as using cache to compare response times!**
