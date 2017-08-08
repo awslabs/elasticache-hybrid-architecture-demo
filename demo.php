@@ -54,6 +54,17 @@ $messages = null;
 		//$scope.redisPort = '<?php echo $redis_port; ?>';
 		$scope.sendButton = false;
 		
+		$scope.clearCache = function() {
+			$http({
+				method: 'GET',
+				url: runScript
+			}).then(function successCallback(response){
+				$scope.messages = '<div class="alert alert-' + response.data.status + '">' + response.data.messages.join("\n") + '</div>';
+			}, function errorCallback(response){
+				$scope.messages = '<div class="alert alert-' + response.data.status + '">' + response.data.messages.join("\n") + '</div>';
+			});
+		}
+		
 		$scope.processData = function() {
 			var data = {};
 			data.mysqlEndpoint = $scope.mysqlEndpoint;
@@ -138,10 +149,20 @@ $messages = null;
 				<div class="col-sm-6"><input class="form-control" type="text" id="query" ng-model="query" placeholder="SHOW DATABASES" > <i>For security, only SELECT, SHOW, DESCRIBE and EXPLAIN will be allowed</i>
 				</div>
 			</div>
-			
+
 			<div class="form-group">
-				<div class="col-sm-6 text-center"><button type="button" class="btn btn-primary" ng-click="processData()" ng-disabled="sendButton">Test Query</button></div>
+				<div class="col-sm-10 text-center">
+					<span class="col-sm-2">&nbsp;</span>
+					<span class="col-sm-4">
+						<button type="button" class="btn btn-primary" ng-click="processData()" ng-disabled="sendButton">Test Query</button> &nbsp;&nbsp;&nbsp;&nbsp;
+					</span>
+					<span class="col-sm-4">
+						<button type="button" class="btn btn-default" ng-click="clearCache()" ng-disabled="clearButton">Clear Cache</button>
+					</span>
+				</div>
 			</div>
+			
+			<div>&nbsp;</div>
 
 			<div class="form-group">
                                 <label for="results" class="control-label col-sm-2">Results:</label>

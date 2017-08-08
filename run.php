@@ -58,72 +58,84 @@ function validateQuery($query) {
     }
 }
 
-// main content
+// Check for allowed usage
+$allow_methods = array('POST', 'GET');
 if (!isset($_SERVER['REQUEST_METHOD'])
-    || strcasecmp($_SERVER['REQUEST_METHOD'], 'POST') != false) {
-    jsonResponse('Method not supported', 'error');
-}
+	|| !in_array($_SERVER['REQUEST_METHOD'], $allow_methods))
+	jsonResponse('Method not supported', 'error');
 
-// get post data and prepare data
-$postdata = file_get_contents("php://input");
-$post = json_decode($postdata);
+// Process queries
+if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 
-$mysql_endpoint = (isset($post->mysqlEndpoint)) ? trim($post->mysqlEndpoint) : null;
-$mysql_port = (isset($post->mysqlPort)) ? trim($post->mysqlPort) : null;
-$mysql_database = (isset($post->mysqlDatabase)) ? trim($post->mysqlDatabase) : null;
-$mysql_username = (isset($post->mysqlUsername)) ? trim($post->mysqlUsername) : null;
-$mysql_password = (isset($post->mysqlPassword)) ? trim($post->mysqlPassword) : null;
-// uncomment to add support for external or different Redis server
-//$redis_endpoint =  (isset($_POST['redisEndpoint'])) ? trim($_POST['redisEndpoint']) : null;
-//$redis_port = (isset($_POST['redisPort'])) ? trim($_POST['redisPort']) : null;
-$query = (isset($post->query)) ? trim($post->query) : null;
+	// get post data and prepare data
+	$postdata = file_get_contents("php://input");
+	$post = json_decode($postdata);
+
+	$mysql_endpoint = (isset($post->mysqlEndpoint)) ? trim($post->mysqlEndpoint) : null;
+	$mysql_port = (isset($post->mysqlPort)) ? trim($post->mysqlPort) : null;
+	$mysql_database = (isset($post->mysqlDatabase)) ? trim($post->mysqlDatabase) : null;
+	$mysql_username = (isset($post->mysqlUsername)) ? trim($post->mysqlUsername) : null;
+	$mysql_password = (isset($post->mysqlPassword)) ? trim($post->mysqlPassword) : null;
+	// uncomment to add support for external or different Redis server
+	//$redis_endpoint =  (isset($_POST['redisEndpoint'])) ? trim($_POST['redisEndpoint']) : null;
+	//$redis_port = (isset($_POST['redisPort'])) ? trim($_POST['redisPort']) : null;
+	$query = (isset($post->query)) ? trim($post->query) : null;
+
+	if (!$mysql_endpoint
+    	|| !$mysql_port
+		|| !$mysql_username
+		|| !$mysql_password
+    	|| !$mysql_database) {
+    	jsonResponse('All database values are required, aborting', 'error');
+		// validations
+
+		// uncomment to add support for external or different Redis server
+		//} elseif (!isset($_POST['redisEndpoint'])
+		//    || !isset($_POST['redisPort'])) {
+		//    jsonResponse('Redis connection values missing, aborting', 'error');
+	} elseif (!validateQuery($post->query)) {
+    	jsonResponse('Only SELECT, SHOW, DESCRIBE and EXPLAIN statements are allowed. Semicolon is forbidden as well', 'error');
+	}
+
+	// Redis object creation
+	$redis = new Redis();
+	if (!$redis->connect($redis_endpoint, $redis_port)) {
+    	jsonResponse("Error connecting to Redis, please check your settings", 'error');
+	}
 
 
-if (!$mysql_endpoint
-    || !$mysql_port
-    || !$mysql_username
-    || !$mysql_password
-    || !$mysql_database) {
-    jsonResponse('All database values are required, aborting', 'error');
-// validations
+	// Database query and cache key
+	$query_key = hash("sha256", $query);
 
-// uncomment to add support for external or different Redis server
-//} elseif (!isset($_POST['redisEndpoint'])
-//    || !isset($_POST['redisPort'])) {
-//    jsonResponse('Redis connection values missing, aborting', 'error');
-} elseif (!validateQuery($post->query)) {
-    jsonResponse('Only SELECT, SHOW, DESCRIBE and EXPLAIN statements are allowed. Semicolon is forbidden as well', 'error');
-}
+	// Verify the cache before run the query on database
+	$query_result = null;
+	$cache_result = $redis->get($query_key);
+	if ($cache_result !== false) {
+    	// if result is found in cache, return result from cache
+		jsonResponse('Loading data from AMAZON ELASTICACHE - REDIS', 'success', unserialize($cache_result), 'cache');
+	} else {
+    	// Run query against database
+		$db = new mysqli($mysql_endpoint, $mysql_username, $mysql_password, $mysql_database);
+		if ($db->connect_error)
+        	jsonResponse('Error connecting to database', 'error');
 
-// Redis object creation
-$redis = new Redis();
-if (!$redis->connect($redis_endpoint, $redis_port)) {
-    jsonResponse("Error connecting to Redis, please check your settings", 'error');
-}
+		$res = $db->query($query);
+		$query_result = $res->fetch_all();
+		$value = serialize($query_result);
 
+		// Save result into cache
+		$redis->set($query_key, $value);
 
-// Database query and cache key
-$query_key = hash("sha256", $query);
-
-// Verify the cache before run the query on database
-$query_result = null;
-$cache_result = $redis->get($query_key);
-if ($cache_result !== false) {
-    // if result is found in cache, return result from cache
-    jsonResponse('Loading data from AMAZON ELASTICACHE - REDIS', 'success', unserialize($cache_result), 'cache');
-} else {
-    // Run query against database
-    $db = new mysqli($mysql_endpoint, $mysql_username, $mysql_password, $mysql_database);
-    if ($db->connect_error)
-        jsonResponse('Error connecting to database', 'error');
-
-    $res = $db->query($query);
-    $query_result = $res->fetch_all();
-    $value = serialize($query_result);
-
-    // Save result into cache
-    $redis->set($query_key, $value);
-
-    $db->close();
-    jsonResponse('Results directly from database', 'success', $query_result, 'database');
+		$db->close();
+		jsonResponse('Results loaded directly from database', 'success', $query_result, 'database');
+	}
+} elseif (strcmp($_SERVER['REQUEST_METHOD'], 'GET') == false) {
+	$redis = new Redis();
+	if (!$redis->connect($redis_endpoint, $redis_port)) {
+		jsonResponse('Error connecting to Redis, please check your settings', 'error');
+	}
+	if (!$redis->flushAll()) {
+		jsonResponse('Error flusing cache', 'error');
+	}
+	jsonResponse('Redis cache was successful flushed', 'success', null, 'redis');
 }
