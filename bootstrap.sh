@@ -33,6 +33,11 @@ service httpd start
 chkconfig httpd on
 
 
+# prepare example dataset
+wget https://s3.amazonaws.com/agleon-demobi/crimes/crimes-2012-2015.csv
+mv crimes-2012-2015.csv /var/www/html
+
+
 # setup demo page
 git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
 cd elasticache-hybrid-architecture-demo

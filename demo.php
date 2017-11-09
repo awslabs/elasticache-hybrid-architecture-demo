@@ -48,12 +48,37 @@ $messages = null;
 		$scope.mysqlPort = '<?php echo $mysql_port; ?>';
 		$scope.mysqlUsername = '<?php echo $mysql_username; ?>';
 		$scope.mysqlDatabase = '<?php echo $mysql_database; ?>';
-		$scope.query = 'SHOW DATABASES';
+		$scope.query = 'SHOW TABLES';
 		// uncomment to add support for external Redis server
 		//$scope.redisEndpoint = '<?php echo $redis_endpoint; ?>';
 		//$scope.redisPort = '<?php echo $redis_port; ?>';
 		$scope.sendButton = false;
 		
+		$scope.loadSample = function() {
+			var data = {};
+			data.action = 'loadsample';
+			data.mysqlEndpoint = $scope.mysqlEndpoint;
+			data.mysqlPort = $scope.mysqlPort;
+			data.mysqlUsername = $scope.mysqlUsername;
+			data.mysqlPassword = $scope.mysqlPassword;
+			data.mysqlDatabase = $scope.mysqlDatabase;
+			$scope.loadButton = true;
+			
+			$scope.messages = '<div class="alert alert-info">This process can take up to 2 minutes, please wait.</div>';
+
+			$http({
+				method: 'POST',
+				url: runScript,
+				data: data
+			}).then(function successCallback(response){
+				$scope.messages = '<div class="alert alert-' + response.data.status + '">' + response.data.messages.join("\n") +  '</div>';
+				$scope.loadButton = false;
+			}, function errorCallback(response){
+				$scope.messages = '<div class="alert alert-' + response.data.status + '">' + response.data.messages.join("\n") + '</div>';
+				$scope.loadButton = false;
+			});
+		}
+
 		$scope.clearCache = function() {
 			$http({
 				method: 'GET',
@@ -67,6 +92,7 @@ $messages = null;
 		
 		$scope.processData = function() {
 			var data = {};
+			data.action = 'query';
 			data.mysqlEndpoint = $scope.mysqlEndpoint;
 			data.mysqlPort = $scope.mysqlPort;
 			data.mysqlUsername = $scope.mysqlUsername;
@@ -146,18 +172,21 @@ $messages = null;
 			</div>
 			<div class="form-group">
 				<label for="query" class="control-label col-sm-2">Query:</label>
-				<div class="col-sm-6"><input class="form-control" type="text" id="query" ng-model="query" placeholder="SHOW DATABASES" > <i>For security, only SELECT, SHOW, DESCRIBE and EXPLAIN will be allowed</i>
+				<div class="col-sm-6"><input class="form-control" type="text" id="query" ng-model="query" placeholder="SHOW TABLES" > <i>For security, only SELECT, SHOW, DESCRIBE and EXPLAIN will be allowed</i>
 				</div>
 			</div>
 
 			<div class="form-group">
 				<div class="col-sm-10 text-center">
-					<span class="col-sm-2">&nbsp;</span>
-					<span class="col-sm-4">
-						<button type="button" class="btn btn-primary" ng-click="processData()" ng-disabled="sendButton">Test Query</button> &nbsp;&nbsp;&nbsp;&nbsp;
+					<span class="col-sm-3">&nbsp;</span>
+					<span class="col-sm-2">
+						<button type="button" class="btn btn-primary" ng-click="processData()" ng-disabled="sendButton">Test Query</button>
 					</span>
-					<span class="col-sm-4">
+					<span class="col-sm-2">
 						<button type="button" class="btn btn-default" ng-click="clearCache()" ng-disabled="clearButton">Clear Cache</button>
+					</span>
+					<span class="col-sm-2">
+						<button type="button" class="btn btn-default" ng-click="loadSample()" ng-disabled="loadButton">Load Sample</button>
 					</span>
 				</div>
 			</div>

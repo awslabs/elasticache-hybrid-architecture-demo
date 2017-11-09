@@ -58,77 +58,117 @@ function validateQuery($query) {
     }
 }
 
+function loadSample($db) {
+	$query = "DROP TABLE crimes";
+	$res = $db->query($query);
+
+	$query = "
+CREATE TABLE crimes (
+    report_date DATE NOT NULL,
+	report_no INT NOT NULL,
+	occurred_date DATE NOT NULL,
+	occurred_time INT,
+	area_code SMALLINT,
+	area_name VARCHAR(64),
+	rd INT,
+	crime_code INT,
+	crime_code_desc VARCHAR(128),
+	status_code VARCHAR(16),
+	status_desc VARCHAR(64),
+	location VARCHAR(128),
+	cross_street VARCHAR(128),
+	geolocation VARCHAR(32)
+)";
+
+	$res = $db->query($query);
+	
+	$query = "LOAD DATA LOCAL INFILE '/var/www/html/crimes-2012-2015.csv' INTO TABLE crimes FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES (@report_date, report_no, @occurred_date, occurred_time, area_code, area_name, rd, crime_code, crime_code_desc, status_code, status_desc, location, cross_street, geolocation) SET report_date = str_to_date(@report_date, '%m/%d/%Y'), occurred_date = str_to_date(@occurred_date, '%m/%d/%Y')";
+	$res = $db->query($query);
+	
+	jsonResponse("Sample table 'crimes' created, now you can run queries such as 'SELECT * FROM crimes LIMIT 20' to compare results with cache and without cache");
+}
+
+
 // Check for allowed usage
 $allow_methods = array('POST', 'GET');
 if (!isset($_SERVER['REQUEST_METHOD'])
 	|| !in_array($_SERVER['REQUEST_METHOD'], $allow_methods))
 	jsonResponse('Method not supported', 'error');
 
+
 // Process queries
 if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
-
-	// get post data and prepare data
 	$postdata = file_get_contents("php://input");
 	$post = json_decode($postdata);
 
+	$action = (isset($post->action)) ? trim($post->action) : null;
 	$mysql_endpoint = (isset($post->mysqlEndpoint)) ? trim($post->mysqlEndpoint) : null;
 	$mysql_port = (isset($post->mysqlPort)) ? trim($post->mysqlPort) : null;
 	$mysql_database = (isset($post->mysqlDatabase)) ? trim($post->mysqlDatabase) : null;
 	$mysql_username = (isset($post->mysqlUsername)) ? trim($post->mysqlUsername) : null;
 	$mysql_password = (isset($post->mysqlPassword)) ? trim($post->mysqlPassword) : null;
+	$query = (isset($post->query)) ? trim($post->query) : null;
 	// uncomment to add support for external or different Redis server
 	//$redis_endpoint =  (isset($_POST['redisEndpoint'])) ? trim($_POST['redisEndpoint']) : null;
 	//$redis_port = (isset($_POST['redisPort'])) ? trim($_POST['redisPort']) : null;
-	$query = (isset($post->query)) ? trim($post->query) : null;
 
 	if (!$mysql_endpoint
     	|| !$mysql_port
 		|| !$mysql_username
 		|| !$mysql_password
     	|| !$mysql_database) {
-    	jsonResponse('All database values are required, aborting', 'error');
+    	jsonResponse('All database parameters are required, aborting', 'error');
 		// validations
-
+	}
+	
+	if (strcmp($action, 'loadsample') == false) {
+		$db = new mysqli($mysql_endpoint, $mysql_username, $mysql_password, $mysql_database);
+		if ($db->connect_error)
+	    	jsonResponse('Error connecting to database', 'error');
+		loadSample($db);
+	} elseif (strcmp($action, 'query') == false) {
 		// uncomment to add support for external or different Redis server
 		//} elseif (!isset($_POST['redisEndpoint'])
 		//    || !isset($_POST['redisPort'])) {
 		//    jsonResponse('Redis connection values missing, aborting', 'error');
-	} elseif (!validateQuery($post->query)) {
-    	jsonResponse('Only SELECT, SHOW, DESCRIBE and EXPLAIN statements are allowed. Semicolon is forbidden as well', 'error');
+		if (!validateQuery($query)) {
+    		jsonResponse('Only SELECT, SHOW, DESCRIBE and EXPLAIN statements are allowed. Semicolon is forbidden as well', 'error');
+		}
+
+		// Redis object creation
+		$redis = new Redis();
+		if (!$redis->connect($redis_endpoint, $redis_port)) {
+			jsonResponse("Error connecting to Redis, please check your settings", 'error');
+		}
+
+		// Database query and cache key
+		$query_key = hash("sha256", $query);
+
+		// Verify the cache before run the query on database
+		$query_result = null;
+		$cache_result = $redis->get($query_key);
+		if ($cache_result !== false) {
+    		// if result is found in cache, return result from cache
+			jsonResponse('Loading data from AMAZON ELASTICACHE - REDIS', 'success', unserialize($cache_result), 'cache');
+		} else {
+    		// Run query against database
+			$db = new mysqli($mysql_endpoint, $mysql_username, $mysql_password, $mysql_database);
+			if ($db->connect_error)
+        		jsonResponse('Error connecting to database', 'error');
+
+			$res = $db->query($query);
+			$query_result = $res->fetch_all();
+			$value = serialize($query_result);
+
+			// Save result into cache
+			$redis->set($query_key, $value);
+
+			$db->close();
+			jsonResponse('Results loaded directly from database', 'success', $query_result, 'database');
+		}
 	}
 
-	// Redis object creation
-	$redis = new Redis();
-	if (!$redis->connect($redis_endpoint, $redis_port)) {
-    	jsonResponse("Error connecting to Redis, please check your settings", 'error');
-	}
-
-
-	// Database query and cache key
-	$query_key = hash("sha256", $query);
-
-	// Verify the cache before run the query on database
-	$query_result = null;
-	$cache_result = $redis->get($query_key);
-	if ($cache_result !== false) {
-    	// if result is found in cache, return result from cache
-		jsonResponse('Loading data from AMAZON ELASTICACHE - REDIS', 'success', unserialize($cache_result), 'cache');
-	} else {
-    	// Run query against database
-		$db = new mysqli($mysql_endpoint, $mysql_username, $mysql_password, $mysql_database);
-		if ($db->connect_error)
-        	jsonResponse('Error connecting to database', 'error');
-
-		$res = $db->query($query);
-		$query_result = $res->fetch_all();
-		$value = serialize($query_result);
-
-		// Save result into cache
-		$redis->set($query_key, $value);
-
-		$db->close();
-		jsonResponse('Results loaded directly from database', 'success', $query_result, 'database');
-	}
+	jsonResponse(sprintf("Invalid action %s", $action), 'error');
 } elseif (strcmp($_SERVER['REQUEST_METHOD'], 'GET') == false) {
 	$redis = new Redis();
 	if (!$redis->connect($redis_endpoint, $redis_port)) {
@@ -139,3 +179,5 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 	}
 	jsonResponse('Redis cache was successful flushed', 'success', null, 'redis');
 }
+
+jsonResponse('Invalid request', 'error');

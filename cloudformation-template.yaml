@@ -23,16 +23,16 @@ Metadata:
     Author:
         Description: "Angel Leon"
     Date:
-        Description: "2017-05-30"
+        Description: "2017-11-08"
 
 Parameters:
     Architect:
         Type: String
-        Default: My Name
+        Default: "Your Name"
         Description: "Architects Name"
     ArchitectEmail:
         Type: String
-        Default: email@domain.com
+        Default: "your@email.com"
         Description: "Architects Email"
     Project:
         Type: String
@@ -69,14 +69,16 @@ Parameters:
     CacheEngine:
         Type: String
         Default: redis
-        Description: "Amazon ElastiCache Engine, redis or memcached"
+        Description: "Amazon ElastiCache Engine, only redis is supported in this template"
         AllowedValues:
             - redis
-            - memcached
     CacheEngineVersion:
         Type: String
-        Default: 3.2.4
+        Default: 3.2.6
         Description: "Amazon ElastiCache Engine version"
+        AllowedValues:
+            - 3.2.6
+            - 3.2.4
     WebInstanceType:
         Type: String
         Default: t2.small
@@ -97,24 +99,70 @@ Parameters:
         Description: "Instance EBS volume size in GB, 10, 25, 100, etc"
         MinValue: 10
         MaxValue: 100
-    DatabaseAddress:
+    DatabaseInstanceType:
         Type: String
-        Default: mydatabase.domain.com
-        Description: "Database Address or hostname"
+        Default: db.t2.micro
+        Description: "RDS MySQL Instance types, i.e. db.t2.micro, db.t2.small, db.m3.medium, db.m4.xlarge, etc"
+        AllowedValues:
+            - db.t2.micro
+            - db.t2.small
+            - db.t2.medium
+            - db.m3.medium
+            - db.m3.large
+            - db.m3.xlarge
+            - db.m3.2xlarge
+            - db.m4.large
+            - db.m4.xlarge
+            - db.m4.2xlarge
+            - db.m4.4xlarge
+    DBInstanceIdentifier:
+        Type: String
+        Default: "MyCacheDatabase"
+        Description: "Database Name"
     DatabaseName:
         Type: String
-        Default: mydb
-        Description: "Database name"
-        MinLength: 1
-        MaxLength: 64
+        Default: "demodb"
+        Description: "Database Name"
         AllowedPattern: "[a-zA-Z0-9]*"
     DatabaseUsername:
-        Description: "Database username"
-        Default: mydbuser
         Type: String
-        MinLength: 1
-        MaxLength: 41
+        Default: "demodb"
+        Description: "Database Username"
         AllowedPattern: "[a-zA-Z0-9]*"
+    DatabasePassword:
+        Type: String
+        Description: "Database Password"
+        NoEcho: true
+        AllowedPattern: "[a-zA-Z0-9]*"
+    DatabaseEngine:
+        Type: String
+        Default: mysql
+        Description: "Database Engine"
+        AllowedValues:
+            - mysql
+    DatabaseMultiAZ:
+        Type: String
+        Default: false
+        Description: "Database MultiAZ feature"
+        AllowedValues:
+            - false
+            - true
+    DatabaseEngineVersion:
+        Type: String
+        Default: "5.7.19"
+        Description: "Database Engine version"
+        AllowedValues:
+            - 5.7.19
+            - 5.6.37
+            - 5.5.57
+    DatabaseVolumeSize:
+        Type: Number
+        Default: 10
+        Description: "Database Volume Size"
+    DatabaseVolumeType:
+        Type: String
+        Default: "gp2"
+        Description: "Database Volume Type"
     Vpc:
         Type: AWS::EC2::VPC::Id
         Description: "VPC where the instance will live"
@@ -235,7 +283,9 @@ Resources:
 
     # Web Instances
     WebInstance:
-        DependsOn: "CacheCluster"
+        DependsOn: 
+            - CacheCluster
+            - DatabaseInstance
         Type: AWS::EC2::Instance
         Properties:
             ImageId: !FindInMap [ RegionMap, !Ref "AWS::Region", AMI ]
@@ -267,7 +317,7 @@ Resources:
                     yum -y install git
                     git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
                     cd elasticache-hybrid-architecture-demo
-                    sh ./bootstrap.sh ${CacheCluster.RedisEndpoint.Address} ${CacheCluster.RedisEndpoint.Port} ${DatabaseAddress} ${DatabaseUsername} ${DatabaseName}
+                    sh ./bootstrap.sh ${CacheCluster.RedisEndpoint.Address} ${CacheCluster.RedisEndpoint.Port} ${DatabaseInstance.Endpoint.Address} ${DatabaseUsername} ${DatabaseName}
 
     # Amazon ElastiCache
     CacheSecurityGroup:
@@ -301,7 +351,6 @@ Resources:
         Properties:
             AutoMinorVersionUpgrade: true
             CacheNodeType: !Ref CacheInstanceType
-#            AZMode: "cross-az" # used with 2 or more nodes
             ClusterName: !Ref CacheClusterName
             Engine: !Ref CacheEngine
             EngineVersion: !Ref CacheEngineVersion
@@ -320,6 +369,57 @@ Resources:
                   Value: !Ref Architect
                 - Key: ArchitectEmail
                   Value: !Ref ArchitectEmail
+    DatabaseSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: Drupal Database SG
+            VpcId:
+                Ref: Vpc
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 3306
+                  ToPort: 3306
+                  SourceSecurityGroupId: !GetAtt WebSecurityGroup.GroupId
+                - IpProtocol: tcp
+                  FromPort: 3306
+                  ToPort: 3306
+                  CidrIp: !Ref CustomerAddress
+            Tags:
+                - Key: Name
+                  Value: !Join [ " ", [ !Ref Project, -DB-SG ] ]
+                - Key: Customer
+                  Value: !Ref Customer
+                - Key: Project
+                  Value: !Ref Project
+                - Key: Architect
+                  Value: !Ref Architect
+                - Key: ArchitectEmail
+                  Value: !Ref ArchitectEmail
+    DatabaseInstance:
+        Type: AWS::RDS::DBInstance
+        Properties:
+            DBName: !Ref DatabaseName
+            AllocatedStorage: !Ref DatabaseVolumeSize
+            DBInstanceClass: !Ref DatabaseInstanceType
+            StorageType: !Ref DatabaseVolumeType
+            Engine: !Ref DatabaseEngine
+            EngineVersion: !Ref DatabaseEngineVersion
+            MasterUsername: !Ref DatabaseUsername
+            MasterUserPassword: !Ref DatabasePassword
+            VPCSecurityGroups:
+                - !GetAtt DatabaseSecurityGroup.GroupId
+            MultiAZ: !Ref DatabaseMultiAZ
+            Tags:
+                - Key: Name
+                  Value: !Join [ " ", [ !Ref Project, -DB ] ]
+                - Key: Customer
+                  Value: !Ref Customer
+                - Key: Project
+                  Value: !Ref Project
+                - Key: Architect
+                  Value: !Ref Architect
+                - Key: ArchitectEmail
+                  Value: !Ref ArchitectEmail
 
 Outputs:
     WebInstance:
@@ -328,3 +428,5 @@ Outputs:
         Value: !GetAtt CacheCluster.RedisEndpoint.Address
     DemoScript:
         Value: !Join [ "", [ "http://", !GetAtt WebInstance.PublicDnsName, "/demo.php" ] ]
+    DatabaseAddress:
+        Value: !GetAtt DatabaseInstance.Endpoint.Address
