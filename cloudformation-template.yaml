@@ -187,7 +187,7 @@ Mappings:
         us-west-2:
             AMI: ami-4836a428
             DeviceName: /dev/xvda
-        canada-central-1:
+        ca-central-1:
             AMI: ami-0bd66a6f
             DeviceName: /dev/xvda
         eu-west-1:
