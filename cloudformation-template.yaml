@@ -23,29 +23,80 @@ Metadata:
     Author:
         Description: "Angel Leon"
     Date:
-        Description: "2017-11-08"
+        Description: "2017-12-07"
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+            - Label:
+                default: "Main Configuration"
+              Parameters:
+                - CustomerAddress
+                - KeyName
+                - DatabasePassword
+                - Vpc
+                - Subnet
+            - Label:
+                default: "Tag Configuration"
+              Parameters:
+                - Architect
+                - ArchitectEmail
+                - Customer
+                - Project
+            - Label:
+                default: "Cache Configuration"
+              Parameters:
+                - CacheClusterName
+                - CacheInstanceType
+                - CachePort
+                - CacheEngine
+                - CacheEngineVersion
+            - Label:
+                default: "Web Instance Configuration"
+              Parameters:
+                - WebInstanceType
+                - WebVolumeSize
+            - Label:
+                default: "Database Configuration"
+              Parameters:
+                - DatabaseName
+                - DatabaseUsername
+                - DBInstanceIdentifier
+                - DatabaseInstanceType
+                - DatabaseEngine
+                - DatabaseEngineVersion
+                - DatabaseMultiAZ
+                - DatabaseVolumeSize
+                - DatabaseVolumeType
+        ParameterLabels:
+            CustomerAddress:
+                default: "Your IP address"
+            DatabasePassword:
+                default: "DB Password"
 
 Parameters:
     Architect:
         Type: String
         Default: "Your Name"
-        Description: "Architects Name"
+        Description: "Your name or architect name"
+        AllowedPattern: "[a-zA-Z0-9 ]*"
     ArchitectEmail:
         Type: String
         Default: "your@email.com"
-        Description: "Architects Email"
+        Description: "Your email address or architect email"
+        AllowedPattern: "[a-zA-Z0-9@.]*"
     Project:
         Type: String
-        Default: ElastiCacheDemo
+        Default: "HybridArchitectureDemo"
         Description: "Project Name"
+        AllowedPattern: "[a-zA-Z0-9 ]*"
     Customer:
         Type: String
-        Default: My Customer Name
-        Description: "Customer Name"
+        Default: "My Customer Name"
+        Description: "My company name or customer name"
+        AllowedPattern: "[a-zA-Z0-9 ]*"
     CustomerAddress:
         Type: String
-        Default: 0.0.0.0/0
-        Description: "Customer public address, used for SSH access"
+        Default: "10.0.0.5/32"
+        Description: "Source address allowed to connect to EC2 instance, YOU SHOULD INCLUDE /32 at the end of your IP. You can also use 0.0.0.0/0 for open access, however, is NOT RECOMMENDED"
     CacheInstanceType:
         Type: String
         Default: cache.t2.small
@@ -58,14 +109,33 @@ Parameters:
             - cache.m3.large
             - cache.m3.xlarge
             - cache.m3.2xlarge
+            - cache.m4.large
+            - cache.m4.xlarge
+            - cache.m4.2xlarge
+            - cache.m4.4xlarge
+            - cache.m4.10xlarge
+            - cache.r3.large
+            - cache.r3.xlarge
+            - cache.r3.2xlarge
+            - cache.r3.4xlarge
+            - cache.r3.8xlarge
+            - cache.r4.large
+            - cache.r4.xlarge
+            - cache.r4.2xlarge
+            - cache.r4.4xlarge
+            - cache.r4.8xlarge
+            - cache.r4.16xlarge
     CacheClusterName:
         Type: String
-        Default: "MyCluster"
+        Default: "HybridCacheCluster"
         Description: "Cache Cluster Name"
+        AllowedPattern: "[a-zA-Z0-9]*"
     CachePort:
         Type: Number
         Default: 6379
-        Description: "Amazon ElastiCache port"
+        Description: "Amazon ElastiCache for Redis port"
+        AllowedValues:
+            - 6379
     CacheEngine:
         Type: String
         Default: redis
@@ -84,15 +154,23 @@ Parameters:
         Default: t2.small
         Description: "Instance type, i.e. t2.small, m3.large, m4.xlarge, etc"
         AllowedValues:
+            - t2.nano
             - t2.micro
             - t2.small
             - t2.medium
+            - t2.large
+            - t2.xlarge
+            - t2.2xlarge
             - m3.medium
             - m3.large
             - m3.xlarge
+            - m3.2xlarge
             - m4.large
             - m4.xlarge
             - m4.2xlarge
+            - m4.4xlarge
+            - m4.10xlarge
+            - m4.16xlarge
     WebVolumeSize:
         Type: Number
         Default: 10
@@ -117,8 +195,9 @@ Parameters:
             - db.m4.4xlarge
     DBInstanceIdentifier:
         Type: String
-        Default: "MyCacheDatabase"
+        Default: "HybridDatabase"
         Description: "Database Name"
+        AllowedPattern: "[a-zA-Z0-9]*"
     DatabaseName:
         Type: String
         Default: "demodb"
@@ -137,20 +216,20 @@ Parameters:
     DatabaseEngine:
         Type: String
         Default: mysql
-        Description: "Database Engine"
+        Description: "Database Engine, only MySQL is supported by this template"
         AllowedValues:
             - mysql
     DatabaseMultiAZ:
         Type: String
         Default: false
-        Description: "Database MultiAZ feature"
+        Description: "Database MultiAZ feature to enable high availability feature"
         AllowedValues:
             - false
             - true
     DatabaseEngineVersion:
         Type: String
         Default: "5.7.19"
-        Description: "Database Engine version"
+        Description: "Database Engine version, MySQL version"
         AllowedValues:
             - 5.7.19
             - 5.6.37
@@ -158,20 +237,24 @@ Parameters:
     DatabaseVolumeSize:
         Type: Number
         Default: 10
-        Description: "Database Volume Size"
+        Description: "Database Volume Size in GB"
+        MinValue: 10
+        MaxValue: 100
     DatabaseVolumeType:
         Type: String
         Default: "gp2"
-        Description: "Database Volume Type"
+        Description: "Database Volume Type, gp2 for General Purpose SSD"
+        AllowedValues:
+            - gp2
     Vpc:
         Type: AWS::EC2::VPC::Id
-        Description: "VPC where the instance will live"
+        Description: "VPC where the instances will be placed"
     Subnet:
         Type: AWS::EC2::Subnet::Id
-        Description: "SubnetId where EC2 instance will live"
+        Description: "Subnet Id where EC2 instance will be placed"
     KeyName:
         Type: AWS::EC2::KeyPair::KeyName
-        Description: "KeyName used to decrypt Windows password"
+        Description: "Key pair name used grant access to the EC2 instance"
 
 Mappings:
     RegionMap:
@@ -247,7 +330,7 @@ Resources:
                 - IpProtocol: tcp
                   FromPort: 80
                   ToPort: 80
-                  CidrIp: 0.0.0.0/0
+                  CidrIp: !Ref CustomerAddress
                 - IpProtocol: tcp
                   FromPort: 22
                   ToPort: 22
@@ -258,16 +341,12 @@ Resources:
                   CidrIp: !Ref CustomerAddress
             SecurityGroupEgress:
                 - IpProtocol: tcp
-                  FromPort: 0
-                  ToPort: 65535
+                  FromPort: !Ref CachePort
+                  ToPort: !Ref CachePort
                   CidrIp: 0.0.0.0/0
-                - IpProtocol: udp
-                  FromPort: 0
-                  ToPort: 65535
-                  CidrIp: 0.0.0.0/0
-                - IpProtocol: icmp
-                  FromPort: -1
-                  ToPort: -1
+                - IpProtocol: tcp
+                  FromPort: 3306
+                  ToPort: 3306
                   CidrIp: 0.0.0.0/0
             Tags:
                 - Key: Name
@@ -283,7 +362,7 @@ Resources:
 
     # Web Instances
     WebInstance:
-        DependsOn: 
+        DependsOn:
             - CacheCluster
             - DatabaseInstance
         Type: AWS::EC2::Instance
@@ -328,12 +407,8 @@ Resources:
                 Ref: Vpc
             SecurityGroupIngress:
                 - IpProtocol: tcp
-                  FromPort: 6379
-                  ToPort: 6379
-                  CidrIp: !Ref CustomerAddress
-                - IpProtocol: tcp
-                  FromPort: 6379
-                  ToPort: 6379
+                  FromPort: !Ref CachePort
+                  ToPort: !Ref CachePort
                   SourceSecurityGroupId: !GetAtt WebSecurityGroup.GroupId
             Tags:
                 - Key: Name
@@ -380,10 +455,6 @@ Resources:
                   FromPort: 3306
                   ToPort: 3306
                   SourceSecurityGroupId: !GetAtt WebSecurityGroup.GroupId
-                - IpProtocol: tcp
-                  FromPort: 3306
-                  ToPort: 3306
-                  CidrIp: !Ref CustomerAddress
             Tags:
                 - Key: Name
                   Value: !Join [ " ", [ !Ref Project, -DB-SG ] ]
