@@ -138,7 +138,7 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 		// Redis object creation
 		require_once('predis/autoload.php');
 		$redis = new Predis\Client([
-			'scheme' => 'tls',
+			'scheme' => 'tcp', // replace tcp for tls to enable ssl
 			'host' => $redis_endpoint,
 			'port' => $redis_port,
 //			'password' => $redis_token
@@ -151,7 +151,7 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 		// Verify the cache before run the query on database
 		$query_result = null;
 		$cache_result = $redis->get($query_key);
-		if ($cache_result !== false) {
+		if ($cache_result != false) {
     		// if result is found in cache, return result from cache
 			jsonResponse('Loading data from AMAZON ELASTICACHE - REDIS', 'success', unserialize($cache_result), 'cache');
 		} else {
@@ -176,7 +176,7 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 } elseif (strcmp($_SERVER['REQUEST_METHOD'], 'GET') == false) {
 	require_once('predis/autoload.php');
 	$redis = new Predis\Client([
-		'scheme' => 'tls',
+		'scheme' => 'tcp', // replace tcp for tls to enable ssl
 		'host' => $redis_endpoint,
 		'port' => $redis_port,
 //		'password' => $redis_token
