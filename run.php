@@ -141,7 +141,7 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 			'scheme' => 'tls',
 			'host' => $redis_endpoint,
 			'port' => $redis_port,
-			'password' => $redis_token
+//			'password' => $redis_token
 		]);
 //		jsonResponse("Error connecting to Redis, please check your settings", 'error');
 
@@ -179,7 +179,7 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 		'scheme' => 'tls',
 		'host' => $redis_endpoint,
 		'port' => $redis_port,
-		'password' => $redis_token
+//		'password' => $redis_token
 	]);
 
 	if (!$redis->flushall()) {
