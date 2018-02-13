@@ -213,6 +213,7 @@ Parameters:
         Description: "Database Password"
         NoEcho: true
         AllowedPattern: "[a-zA-Z0-9]*"
+        MinLength: 8
     DatabaseEngine:
         Type: String
         Default: mysql
