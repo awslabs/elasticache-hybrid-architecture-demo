@@ -259,46 +259,49 @@ Parameters:
 Mappings:
     RegionMap:
         us-east-1:
-            AMI: ami-c58c1dd3
+            AMI: ami-97785bed
             DeviceName: /dev/xvda
         us-east-2:
-            AMI: ami-4191b524
+            AMI: ami-f63b1193
             DeviceName: /dev/xvda
         us-west-1:
-            AMI: ami-7a85a01a
+            AMI: ami-824c4ee2
             DeviceName: /dev/xvda
         us-west-2:
-            AMI: ami-4836a428
+            AMI: ami-f2d3638a
             DeviceName: /dev/xvda
         ca-central-1:
-            AMI: ami-0bd66a6f
+            AMI: ami-a954d1cd
             DeviceName: /dev/xvda
         eu-west-1:
-            AMI: ami-01ccc867
+            AMI: ami-d834aba1
             DeviceName: /dev/xvda
         eu-central-1:
-            AMI: ami-b968bad6
+            AMI: ami-5652ce39
             DeviceName: /dev/xvda
         eu-west-2:
-            AMI: ami-b6daced2
+            AMI: ami-403e2524
+            DeviceName: /dev/xvda
+		eu-west-3:
+			AMI: ami-8ee056f3
+			DeviceName: /dev/xvda
+        ap-southeast-1:
+            AMI: ami-68097514
             DeviceName: /dev/xvda
         ap-southeast-1:
-            AMI: ami-fc5ae39f
-            DeviceName: /dev/xvda
-        ap-southeast-2:
-            AMI: ami-162c2575
-            DeviceName: /dev/xvda
-        ap-northeast-2:
-            AMI: ami-9d15c7f3
+            AMI: ami-863090e8
             DeviceName: /dev/xvda
         ap-northeast-1:
+            AMI: ami-ceafcba8
+            DeviceName: /dev/xvda
+        ap-northeast-2:
             AMI: ami-923d12f5
             DeviceName: /dev/xvda
         ap-south-1:
-            AMI: ami-52c7b43d
+            AMI: ami-531a4c3c
             DeviceName: /dev/xvda
         sa-east-1:
-            AMI: ami-37cfad5b
+            AMI: ami-84175ae8
             DeviceName: /dev/xvda
     
 Resources:
