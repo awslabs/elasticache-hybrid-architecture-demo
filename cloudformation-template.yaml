@@ -282,9 +282,9 @@ Mappings:
         eu-west-2:
             AMI: ami-403e2524
             DeviceName: /dev/xvda
-		eu-west-3:
-			AMI: ami-8ee056f3
-			DeviceName: /dev/xvda
+        eu-west-3:
+            AMI: ami-8ee056f3
+            DeviceName: /dev/xvda
         ap-southeast-1:
             AMI: ami-68097514
             DeviceName: /dev/xvda
