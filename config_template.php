@@ -23,4 +23,5 @@ $mysql_database = '{MYSQL_DATABASE}';
 $mysql_port = '3306';
 $redis_endpoint = '{ELASTICACHE_ENDPOINT}';
 $redis_port = '{ELASTICACHE_PORT}';
+$redis_token = '{ELASTICACHE_TOKEN}';
 $query = 'SHOW DATABASES'; // replace with your own query

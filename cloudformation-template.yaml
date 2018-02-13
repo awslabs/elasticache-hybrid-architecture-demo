@@ -1,6 +1,6 @@
 #
 # cloudformation-template.yaml - Template to deploy AWS resources
-# Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2017-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License").
 # You may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ Metadata:
                 - CustomerAddress
                 - KeyName
                 - DatabasePassword
+                - CacheToken
                 - Vpc
                 - Subnet
             - Label:
@@ -97,6 +98,13 @@ Parameters:
         Type: String
         Default: "10.0.0.5/32"
         Description: "Source address allowed to connect to EC2 instance, YOU SHOULD INCLUDE /32 at the end of your IP. You can also use 0.0.0.0/0 for open access, however, is NOT RECOMMENDED"
+    CacheToken:
+        Type: String
+        Description: "Auth token used to connect securely into Redis, between 16-128 characters"
+        NoEcho: true
+        AllowedPattern: "[a-zA-Z0-9]*"
+        MinLength: 16
+        MaxLength: 128
     CacheInstanceType:
         Type: String
         Default: cache.t2.small
@@ -105,20 +113,11 @@ Parameters:
             - cache.t2.micro
             - cache.t2.small
             - cache.t2.medium
-            - cache.m3.medium
-            - cache.m3.large
-            - cache.m3.xlarge
-            - cache.m3.2xlarge
             - cache.m4.large
             - cache.m4.xlarge
             - cache.m4.2xlarge
             - cache.m4.4xlarge
             - cache.m4.10xlarge
-            - cache.r3.large
-            - cache.r3.xlarge
-            - cache.r3.2xlarge
-            - cache.r3.4xlarge
-            - cache.r3.8xlarge
             - cache.r4.large
             - cache.r4.xlarge
             - cache.r4.2xlarge
@@ -148,7 +147,6 @@ Parameters:
         Description: "Amazon ElastiCache Engine version"
         AllowedValues:
             - 3.2.6
-            - 3.2.4
     WebInstanceType:
         Type: String
         Default: t2.small
@@ -161,16 +159,18 @@ Parameters:
             - t2.large
             - t2.xlarge
             - t2.2xlarge
-            - m3.medium
-            - m3.large
-            - m3.xlarge
-            - m3.2xlarge
             - m4.large
             - m4.xlarge
             - m4.2xlarge
             - m4.4xlarge
             - m4.10xlarge
             - m4.16xlarge
+            - m5.large
+            - m5.xlarge
+            - m5.2xlarge
+            - m5.4xlarge
+            - m5.12xlarge
+            - m5.24xlarge
     WebVolumeSize:
         Type: Number
         Default: 10
@@ -185,14 +185,19 @@ Parameters:
             - db.t2.micro
             - db.t2.small
             - db.t2.medium
-            - db.m3.medium
-            - db.m3.large
-            - db.m3.xlarge
-            - db.m3.2xlarge
+            - db.t2.large
+            - db.t2.xlarge
+            - db.t2.2xlarge
             - db.m4.large
             - db.m4.xlarge
             - db.m4.2xlarge
             - db.m4.4xlarge
+            - db.r4.large
+            - db.r4.xlarge
+            - db.r4.2xlarge
+            - db.r4.4xlarge
+            - db.r4.8xlarge
+            - db.r4.16xlarge
     DBInstanceIdentifier:
         Type: String
         Default: "HybridDatabase"
@@ -210,10 +215,11 @@ Parameters:
         AllowedPattern: "[a-zA-Z0-9]*"
     DatabasePassword:
         Type: String
-        Description: "Database Password"
+        Description: "Database Password, between 8-41 characters"
         NoEcho: true
         AllowedPattern: "[a-zA-Z0-9]*"
         MinLength: 8
+        MaxLength: 41
     DatabaseEngine:
         Type: String
         Default: mysql
@@ -357,6 +363,10 @@ Resources:
                   ToPort: 443
                   CidrIp: 0.0.0.0/0
                 - IpProtocol: tcp
+                  FromPort: 9418
+                  ToPort: 9418
+                  CidrIp: 0.0.0.0/0
+                - IpProtocol: tcp
                   FromPort: 3306
                   ToPort: 3306
                   CidrIp: 0.0.0.0/0
@@ -408,7 +418,7 @@ Resources:
                     yum -y install git
                     git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
                     cd elasticache-hybrid-architecture-demo
-                    sh ./bootstrap.sh ${CacheCluster.RedisEndpoint.Address} ${CacheCluster.RedisEndpoint.Port} ${DatabaseInstance.Endpoint.Address} ${DatabaseUsername} ${DatabaseName}
+                    sh ./bootstrap.sh ${CacheCluster.RedisEndpoint.Address} ${CacheCluster.RedisEndpoint.Port} ${DatabaseInstance.Endpoint.Address} ${DatabaseUsername} ${DatabaseName} ${CacheToken}
 
     # Amazon ElastiCache
     CacheSecurityGroup:

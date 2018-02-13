@@ -25,11 +25,12 @@ elasticache_port="$2"
 mysql_endpoint="$3"
 mysql_username="$4"
 mysql_database="$5"
+elasticache_token="$6"
 
 
 # setup instance
 sleep 10
-yum -y install httpd24 php70 php70-pecl-redis php70-mysqlnd unzip
+yum -y install httpd24 php70 php70-mysqlnd unzip
 
 
 # prepare php application
@@ -37,6 +38,7 @@ git clone https://github.com/awslabs/elasticache-hybrid-architecture-demo
 cd elasticache-hybrid-architecture-demo
 sed -e "s/{ELASTICACHE_ENDPOINT}/${elasticache_endpoint}/g" \
     -e "s/{ELASTICACHE_PORT}/${elasticache_port}/g" \
+	-e "s/{ELASTICACHE_TOKEN}/${elasticache_token}/g" \
 	-e "s/{MYSQL_ENDPOINT}/${mysql_endpoint}/g" \
 	-e "s/{MYSQL_USERNAME}/${mysql_username}/g" \
 	-e "s/{MYSQL_DATABASE}/${mysql_database}/g" \
@@ -46,10 +48,12 @@ sed -e "s/{ELASTICACHE_ENDPOINT}/${elasticache_endpoint}/g" \
 unzip sample-dataset-crimes-2012-2015.csv.zip
 mv sample-dataset-crimes-2012-2015.csv crimes-2012-2015.csv
 
+# download predis client
+git clone git://github.com/nrk/predis.git
+
 # move to document root
 mv * /var/www/html/
 chmod 0644 /var/www/html/demo.php
-
 
 # enable http service
 service httpd start

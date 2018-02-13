@@ -2,7 +2,7 @@
 
 /**
  * run.php - Script to compare Redis vs raw database response times
- * Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2017-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -136,10 +136,14 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 		}
 
 		// Redis object creation
-		$redis = new Redis();
-		if (!$redis->connect($redis_endpoint, $redis_port)) {
-			jsonResponse("Error connecting to Redis, please check your settings", 'error');
-		}
+		require_once('predis/autoload.php');
+		$redis = new Predis\Client([
+			'scheme' => 'tls',
+			'host' => $redis_endpoint,
+			'port' => $redis_port,
+			'password' => $redis_token
+		]);
+//		jsonResponse("Error connecting to Redis, please check your settings", 'error');
 
 		// Database query and cache key
 		$query_key = hash("sha256", $query);
@@ -170,11 +174,15 @@ if (strcmp($_SERVER['REQUEST_METHOD'], 'POST') == false) {
 
 	jsonResponse(sprintf("Invalid action %s", $action), 'error');
 } elseif (strcmp($_SERVER['REQUEST_METHOD'], 'GET') == false) {
-	$redis = new Redis();
-	if (!$redis->connect($redis_endpoint, $redis_port)) {
-		jsonResponse('Error connecting to Redis, please check your settings', 'error');
-	}
-	if (!$redis->flushAll()) {
+	require_once('predis/autoload.php');
+	$redis = new Predis\Client([
+		'scheme' => 'tls',
+		'host' => $redis_endpoint,
+		'port' => $redis_port,
+		'password' => $redis_token
+	]);
+
+	if (!$redis->flushall()) {
 		jsonResponse('Error flusing cache', 'error');
 	}
 	jsonResponse('Redis cache was successful flushed', 'success', null, 'redis');
